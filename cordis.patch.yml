@@ -1,0 +1,7 @@
+# @flg1217/dsh-quick-commands bundle patch: inserts the dual-face plugin row
+# into the web profile roster. The node half registers the settings section
+# (user-configured quick commands); the browser half registers one command
+# contribution per configured command and the settings-panel card.
+- insert:
+    - id: quick-commands
+      name: '@flg1217/dsh-quick-commands'
