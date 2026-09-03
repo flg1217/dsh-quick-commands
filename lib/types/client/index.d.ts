@@ -84,8 +84,10 @@ window.__ModuleLoader__.load({
       const hasEditsRef = react.useRef(false)
 
       const load = react.useCallback(() => {
-        connection.api.settings.describe({}).then((resp) => {
-          const ns = resp?.result?.value?.namespaces?.find?.((n) => n.ns === NS)
+        // 官方 0.1.2:客户端读设置走 remote.settings.describe()。
+        remote.settings.describe().then((resp) => {
+          const view = resp?.ok === true ? resp.value : undefined
+          const ns = view?.namespaces?.find?.((n) => n.ns === NS)
           const commands = ns?.value?.commands
           if (Array.isArray(commands)) {
             const json = JSON.stringify(commands)
@@ -97,7 +99,7 @@ window.__ModuleLoader__.load({
           }
           setLoaded(true)
         }).catch(() => setLoaded(true))
-      }, [connection])
+      }, [remote])
 
       react.useEffect(() => { load() }, [load])
 
@@ -121,10 +123,8 @@ window.__ModuleLoader__.load({
         if (saveTimer.current !== null) clearTimeout(saveTimer.current)
         saveTimer.current = setTimeout(async () => {
           try {
-            await connection.api.settings.mutate({
-              ns: NS,
-              ops: [{ path: ['commands'], op: 'set', value: next }],
-            })
+            // 官方 0.1.2:remote.settings.mutate(ns, ops)。
+            await remote.settings.mutate(NS, [{ path: ['commands'], op: 'set', value: next }])
             savedRef.current = JSON.stringify(next)
             // mutate 期间用户没有继续输入才解除编辑态。
             if (JSON.stringify(draftRef.current) === savedRef.current) hasEditsRef.current = false
@@ -132,7 +132,7 @@ window.__ModuleLoader__.load({
             setWriteError(String(e))
           }
         }, 400)
-      }, [connection])
+      }, [remote])
       react.useEffect(() => () => {
         if (saveTimer.current !== null) clearTimeout(saveTimer.current)
       }, [])
@@ -205,8 +205,10 @@ window.__ModuleLoader__.load({
 
         const readCommands = async () => {
           try {
-            const resp = await connection.api.settings.describe({})
-            const ns = resp?.result?.value?.namespaces?.find?.((n) => n.ns === NS)
+            // 官方 0.1.2:客户端读设置走 remote.settings.describe()。
+            const resp = await remote.settings.describe()
+            const view = resp?.ok === true ? resp.value : undefined
+            const ns = view?.namespaces?.find?.((n) => n.ns === NS)
             const commands = ns?.value?.commands
             return Array.isArray(commands) ? commands : []
           } catch {
