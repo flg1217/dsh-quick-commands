@@ -123,7 +123,7 @@ window.__ModuleLoader__.load({
             setWriteError(String(e))
           }
         }, 400)
-      }, [remote])
+      }, [scope])
       react.useEffect(() => () => {
         if (saveTimer.current !== null) clearTimeout(saveTimer.current)
       }, [])
@@ -192,7 +192,7 @@ window.__ModuleLoader__.load({
       ctx.inject(['inputTriggers', 'slots', 'settingsScope'], (scope) => {
         const inputTriggers = scope.get('inputTriggers')
         const cmdScope = scope.get('settingsScope').bind({ namespace: NS })
-        const remote = scope.get('remote')
+
 
         const readCommands = async () => {
           try {
