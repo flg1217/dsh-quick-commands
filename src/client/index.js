@@ -209,6 +209,7 @@ window.__ModuleLoader__.load({
           order: 1,
           // 输入 / 时菜单列出配置的命令,描述显示 prompt 预览(过长截断)。
           async candidates(_session, { query, signal }) {
+            const commands = await readCommands()
             if (signal.aborted) return []
             return commands
               .filter(cmd => typeof cmd?.name === 'string' && cmd.name.length > 0)
