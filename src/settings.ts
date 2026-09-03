@@ -8,9 +8,8 @@
  */
 
 import z from '@deepseek-ai/schemastery'
-import { settingsNamespace } from '@deepseek-ai/dsh-settings'
 
-export const QUICK_COMMANDS_NS = settingsNamespace('quick-commands')
+export const QUICK_COMMANDS_NS = 'quick-commands'
 
 /** 单条快捷命令:名称 + 实际提示词。 */
 export interface QuickCommand {

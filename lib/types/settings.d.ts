@@ -7,7 +7,7 @@
  * @module quick-commands/settings
  */
 import z from '@deepseek-ai/schemastery';
-export declare const QUICK_COMMANDS_NS: import("@deepseek-ai/dsh-settings").SettingsNamespace;
+export declare const QUICK_COMMANDS_NS = "quick-commands";
 /** 单条快捷命令:名称 + 实际提示词。 */
 export interface QuickCommand {
     /** 命令名(输入栏以 /<name> 触发,小写字母/数字/连字符)。 */

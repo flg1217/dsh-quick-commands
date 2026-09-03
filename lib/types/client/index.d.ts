@@ -69,8 +69,7 @@ window.__ModuleLoader__.load({
 
     // ── 设置卡:命令编辑器(每组一个命令:名称 + 提示词) ──
     function QuickCommandsCard(props) {
-      const connection = props.connection
-      const remote = props.remote
+      const scope = props.scope
       const [open, setOpen] = react.useState(false)
       const [draft, setDraft] = react.useState([])
       const [loaded, setLoaded] = react.useState(false)
@@ -84,11 +83,8 @@ window.__ModuleLoader__.load({
       const hasEditsRef = react.useRef(false)
 
       const load = react.useCallback(() => {
-        // 官方 0.1.2:客户端读设置走 remote.settings.describe()。
-        remote.settings.describe().then((resp) => {
-          const view = resp?.ok === true ? resp.value : undefined
-          const ns = view?.namespaces?.find?.((n) => n.ns === NS)
-          const commands = ns?.value?.commands
+        try {
+          const commands = scope.getSnapshot().value?.commands
           if (Array.isArray(commands)) {
             const json = JSON.stringify(commands)
             savedRef.current = json
@@ -97,20 +93,15 @@ window.__ModuleLoader__.load({
               setDraft(commands)
             }
           }
-          setLoaded(true)
-        }).catch(() => setLoaded(true))
-      }, [remote])
+        } catch { /* 镜像未就绪保持现状 */ }
+        setLoaded(true)
+      }, [scope])
 
       react.useEffect(() => { load() }, [load])
 
       // 实时刷新:设置文档变更(本卡保存或外部编辑)后重载,参照官方
       // ui-agent-preset 的 settings/document-updated 监听模式。
-      react.useEffect(() => {
-        if (remote === undefined) return
-        const onDoc = (ns) => { if (ns === NS) load() }
-        remote.$on('settings/document-updated', onDoc)
-        return () => { remote.$off('settings/document-updated', onDoc) }
-      }, [remote, load])
+      react.useEffect(() => scope.subscribe(() => load()), [scope, load])
 
       // 保存:整段替换 commands(mutate 的 path 必须是数组分段路径)。
       // 防抖 400ms,避免连续击键时多次全量 mutate 的竞态(乱序覆盖)。
@@ -123,8 +114,8 @@ window.__ModuleLoader__.load({
         if (saveTimer.current !== null) clearTimeout(saveTimer.current)
         saveTimer.current = setTimeout(async () => {
           try {
-            // 官方 0.1.2:remote.settings.mutate(ns, ops)。
-            await remote.settings.mutate(NS, [{ path: ['commands'], op: 'set', value: next }])
+            // 官方 0.1.2:SettingsScope.set 队列原子写。
+            await scope.set('commands', next)
             savedRef.current = JSON.stringify(next)
             // mutate 期间用户没有继续输入才解除编辑态。
             if (JSON.stringify(draftRef.current) === savedRef.current) hasEditsRef.current = false
@@ -198,18 +189,14 @@ window.__ModuleLoader__.load({
 
     // ── 插件主体:InputTriggerSource 注册 + 设置卡 ──
     function apply(ctx) {
-      ctx.inject(['inputTriggers', 'connection', 'remote', 'slots'], (scope) => {
+      ctx.inject(['inputTriggers', 'slots', 'settingsScope'], (scope) => {
         const inputTriggers = scope.get('inputTriggers')
-        const connection = scope.get('connection')
+        const cmdScope = scope.get('settingsScope').bind({ namespace: NS })
         const remote = scope.get('remote')
 
         const readCommands = async () => {
           try {
-            // 官方 0.1.2:客户端读设置走 remote.settings.describe()。
-            const resp = await remote.settings.describe()
-            const view = resp?.ok === true ? resp.value : undefined
-            const ns = view?.namespaces?.find?.((n) => n.ns === NS)
-            const commands = ns?.value?.commands
+            const commands = cmdScope.getSnapshot().value?.commands
             return Array.isArray(commands) ? commands : []
           } catch {
             return []
@@ -265,7 +252,7 @@ window.__ModuleLoader__.load({
         }, 'quick-commands: input trigger source')
 
         scope.effect(() => {
-          const sectionInject = () => ({ connection, remote })
+          const sectionInject = () => ({ scope: cmdScope })
           return scope.slots.inject('settings.plugin.item', () => {
             return scope.slots.register({
               name: 'settings.plugin.item',
@@ -281,7 +268,7 @@ window.__ModuleLoader__.load({
     }
 
     exports.apply = apply
-    exports.inject = ['inputTriggers', 'connection', 'slots']
+    exports.inject = ['inputTriggers', 'slots', 'settingsScope']
     exports.name = 'quick-commands-client'
     return module.exports
   },

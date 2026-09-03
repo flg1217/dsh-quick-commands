@@ -7,7 +7,7 @@
  */
 
 import type { Context } from '@deepseek-ai/cordis'
-import { installSettingsSection } from '@deepseek-ai/dsh-settings'
+import type {} from '@deepseek-ai/dsh-settings'
 import {
   QUICK_COMMANDS_NS, QuickCommandsConfigSchema, QUICK_COMMANDS_DEFAULTS,
 } from './settings.js'
@@ -22,9 +22,17 @@ export function quickCommandsConfig(ctx: Context): QuickCommandsConfig {
 }
 
 export function apply(ctx: Context): void {
-  installSettingsSection(ctx, QUICK_COMMANDS_NS, QuickCommandsConfigSchema, QUICK_COMMANDS_DEFAULTS, {
-    setSource: () => {},
-    onChange: () => {},
+  // 官方 0.1.2:设置区经 ctx.settings.installSection 注册。
+  ctx.inject(['settings'], (settingsCtx) => {
+    const settings = settingsCtx.get('settings') as {
+      installSection?: (owner: Context, ns: string, schema: unknown, entry: unknown, hooks: {
+        setSource?: (source: (() => Record<string, unknown> | undefined)) => void; onChange?: () => void
+      }) => void
+    } | undefined
+    settings?.installSection?.(ctx, QUICK_COMMANDS_NS, QuickCommandsConfigSchema, QUICK_COMMANDS_DEFAULTS, {
+      setSource: () => {},
+      onChange: () => {},
+    })
   })
 }
 
