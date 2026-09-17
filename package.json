@@ -43,7 +43,7 @@
     "react": "^18.2.0"
   },
   "dependencies": {
-    "@deepseek-ai/dsh-settings": "^0.1.0-rc.6",
+    "@deepseek-ai/dsh-settings": "link:h:/Projects/DeepseekHarness/deepseek-harness/packages/settings/settings",
     "@deepseek-ai/schemastery": "^3.0.0"
   },
   "devDependencies": {
