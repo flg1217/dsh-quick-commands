@@ -1,7 +1,7 @@
 // 快捷命令插件浏览器半:
 //   1. 注册一个 '/' InputTriggerSource:输入 /<命令名> 时菜单列出配置的命令,
 //      选中后把该命令的提示词直接替换进输入栏(无二级弹窗);
-//   2. settings.plugin.item 设置卡:增删命令(名称/提示词),变更即写。
+//   2. settings.plugins.tab 设置页:增删命令(名称/提示词),变更即写。
 // 候选每次实时读配置,新增/修改命令即时生效,无需重注册。
 window.__ModuleLoader__.load({
   id: '@flg1217/dsh-quick-commands',
@@ -11,7 +11,7 @@ window.__ModuleLoader__.load({
     const react = require('react')
     const slots = require('@deepseek-ai/dsh-client-ui-slots')
     const P = require('@deepseek-ai/dsh-client-ui-primitives')
-    const { Button, IconChevronDownOutline14, IconPlusOutline16 } = P
+    const { Button, IconChevronDownOutlineMedium, IconPlusOutlineRegular } = P
 
     // prompt 预览:单行截断,过长省略号。
     const PROMPT_PREVIEW_MAX = 60
@@ -149,7 +149,7 @@ window.__ModuleLoader__.load({
             react.createElement('span', { className: C.description },
               loaded ? `配置斜杠命令(当前 ${draft.length} 个),/名称 把提示词填入输入栏` : '加载中...'),
           ),
-          react.createElement(IconChevronDownOutline14, { className: `${C.chevron} ${open ? C.chevronOpen : ''}` }),
+          react.createElement(IconChevronDownOutlineMedium, { className: `${C.chevron} ${open ? C.chevronOpen : ''}` }),
         ),
         open && react.createElement('div', { className: C.body },
           react.createElement('p', { className: C.hint },
@@ -180,7 +180,7 @@ window.__ModuleLoader__.load({
                 ),
               ),
           react.createElement('div', { className: C.addRow },
-            react.createElement(Button, { size: 'md', onClick: addCommand, icon: react.createElement(IconPlusOutline16, { size: 14 }) }, '添加命令'),
+            react.createElement(Button, { size: 'md', onClick: addCommand, icon: react.createElement(IconPlusOutlineRegular, { size: 14 }) }, '添加命令'),
             writeError !== '' && react.createElement('span', { className: C.hint }, `保存失败:${writeError}`),
           ),
         ),
@@ -189,9 +189,10 @@ window.__ModuleLoader__.load({
 
     // ── 插件主体:InputTriggerSource 注册 + 设置卡 ──
     function apply(ctx) {
-      ctx.inject(['inputTriggers', 'slots', 'settingsScope'], (scope) => {
+      ctx.inject(['inputTriggers', 'slots', 'configForms'], (scope) => {
         const inputTriggers = scope.get('inputTriggers')
-        const cmdScope = scope.get('settingsScope').bind({ namespace: NS })
+        // 0.2.1:settingsScope 已移除;配置表单经 configForms 按 profile 条目 id 取用。
+        const cmdScope = scope.get('configForms').get(NS)
 
 
         const readCommands = async () => {
@@ -253,22 +254,21 @@ window.__ModuleLoader__.load({
 
         scope.effect(() => {
           const sectionInject = () => ({ scope: cmdScope })
-          return scope.slots.inject('settings.plugin.item', () => {
+          return scope.slots.inject('settings.plugins.tab', () => {
             return scope.slots.register({
-              name: 'settings.plugin.item',
+              name: 'settings.plugins.tab',
               id: 'quick-commands',
-              key: 'quick-commands',
               order: 40,
               label: () => '快捷命令',
               inject: sectionInject,
             }, QuickCommandsCard)
           })
-        }, 'quick-commands: settings.plugin.item')
+        }, 'quick-commands: settings.plugins.tab')
       })
     }
 
     exports.apply = apply
-    exports.inject = ['inputTriggers', 'slots', 'settingsScope']
+    exports.inject = ['inputTriggers', 'slots', 'configForms']
     exports.name = 'quick-commands-client'
     return module.exports
   },

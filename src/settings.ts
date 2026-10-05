@@ -4,9 +4,14 @@
  * 用户可配置若干"快捷命令":每个命令有名字(/name 触发)、描述,
  * 以及**选中后插入输入栏的实际提示词**。
  * 客户端(commandUi popupSelect)按此配置动态注册斜杠命令。
+ *
+ * 0.2.1 起:本 schema 就是设置表单(profile 条目 id `quick-commands`),
+ * commands 标 `.volatile()` 成为活引用——host 半只作设置载体,客户端经
+ * configForms 按条目 id 读写。
  * @module quick-commands/settings
  */
 
+import type { Volatile } from '@deepseek-ai/cordis'
 import z from '@deepseek-ai/schemastery'
 
 export const QUICK_COMMANDS_NS = 'quick-commands'
@@ -19,9 +24,14 @@ export interface QuickCommand {
   prompt: string
 }
 
-/** 插件设置:快捷命令列表。 */
+/** 设置输入面(profile patch 条目 config / 表单写入的原始值)。 */
+export interface QuickCommandsInput {
+  commands?: QuickCommand[]
+}
+
+/** 插件设置面:快捷命令列表(活引用)。 */
 export interface QuickCommandsConfig {
-  commands: QuickCommand[]
+  commands: Volatile<QuickCommand[]>
 }
 
 /** 命令 schema。name 不做 pattern 校验:任意文本都可保存(面板输入不因
@@ -31,15 +41,16 @@ const commandSchema = z.object({
   prompt: z.string().description('触发后插入输入栏的实际提示词'),
 })
 
-/** 设置表单 schema。 */
-export const QuickCommandsConfigSchema: z<QuickCommandsConfig> = z.object({
-  commands: z.array(commandSchema).default([]).description('快捷命令列表'),
-})
-
 /** 默认配置:预置 subagent 示例(用户可在面板增删改)。 */
-export const QUICK_COMMANDS_DEFAULTS: QuickCommandsConfig = {
+export const QUICK_COMMANDS_DEFAULTS: { commands: QuickCommand[] } = {
   commands: [{
     name: 'subagent',
     prompt: '使用subagent_agy_ui,model=gemini-3.7-flash-high委派任务:',
   }],
 }
+
+/** 设置表单 schema(条目 id `quick-commands`)。显式 z<S,T> 注解:数组推断类型不可移植(TS2742)。 */
+export const Config: z<QuickCommandsInput, QuickCommandsConfig> = z.object({
+  commands: z.array(commandSchema).default(QUICK_COMMANDS_DEFAULTS.commands)
+    .description('快捷命令列表').volatile(),
+})
