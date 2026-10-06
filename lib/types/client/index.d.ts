@@ -37,6 +37,7 @@ window.__ModuleLoader__.load({
       chevron: '.dshQc_chevron{color:var(--dsw-alias-label-tertiary);flex:none;transition:transform .16s}',
       chevronOpen: '.dshQc_chevronOpen{transform:rotate(180deg)}',
       body: '.dshQc_body{border-top:1px solid var(--dsw-alias-border-l2);margin:0 16px;padding:14px 0;display:flex;flex-direction:column;gap:12px}',
+      page: '.dshQc_page{display:flex;flex-direction:column;gap:12px}',
       cmd: '.dshQc_cmd{border:1px solid var(--dsw-alias-border-l2);border-radius:10px;padding:14px 16px;background:var(--dsw-alias-bg-layer-3);display:flex;flex-direction:column;gap:10px}',
       cmdTitle: '.dshQc_cmdTitle{display:flex;align-items:center;gap:8px}',
       cmdSlug: '.dshQc_cmdSlug{color:var(--dsw-alias-label-tertiary);font-size:14px;font-weight:600;flex:none}',
@@ -61,6 +62,7 @@ window.__ModuleLoader__.load({
       card: 'dshQc_card', cardOpen: 'dshQc_cardOpen', header: 'dshQc_header',
       headText: 'dshQc_headText', name: 'dshQc_name', description: 'dshQc_description',
       chevron: 'dshQc_chevron', chevronOpen: 'dshQc_chevronOpen', body: 'dshQc_body',
+      page: 'dshQc_page',
       cmd: 'dshQc_cmd', cmdTitle: 'dshQc_cmdTitle', cmdSlug: 'dshQc_cmdSlug',
       inputFull: 'dshQc_inputFull', promptArea: 'dshQc_promptArea',
       btn: 'dshQc_btn', btnDanger: 'dshQc_btnDanger',
@@ -69,8 +71,11 @@ window.__ModuleLoader__.load({
 
     // ── 设置卡:命令编辑器(每组一个命令:名称 + 提示词) ──
     function QuickCommandsCard(props) {
+      // 列表摘要视图:一句话(官方 ItemCard 的 description 渲染此返回值)。
+      if (props.view === 'summary') {
+        return '配置斜杠命令,/名称 把提示词填入输入栏'
+      }
       const scope = props.scope
-      const [open, setOpen] = react.useState(false)
       const [draft, setDraft] = react.useState([])
       const [loaded, setLoaded] = react.useState(false)
       const [writeError, setWriteError] = react.useState('')
@@ -138,20 +143,7 @@ window.__ModuleLoader__.load({
         save(draft.map((c, i) => (i === ci ? { ...c, ...patch } : c)))
       }
 
-      return react.createElement('li', { className: `${C.card} ${open ? C.cardOpen : ''}` },
-        react.createElement('button', {
-          type: 'button', className: C.header, 'aria-expanded': open,
-          'aria-label': `${open ? '收起' : '展开'}: 快捷命令`,
-          onClick: () => setOpen(!open),
-        },
-          react.createElement('span', { className: C.headText },
-            react.createElement('span', { className: C.name }, '快捷命令'),
-            react.createElement('span', { className: C.description },
-              loaded ? `配置斜杠命令(当前 ${draft.length} 个),/名称 把提示词填入输入栏` : '加载中...'),
-          ),
-          react.createElement(IconChevronDownOutlineMedium, { className: `${C.chevron} ${open ? C.chevronOpen : ''}` }),
-        ),
-        open && react.createElement('div', { className: C.body },
+      return react.createElement('div', { className: C.page },
           react.createElement('p', { className: C.hint },
             '每个命令对应一段提示词:输入栏输入 /名称 选中后,该提示词直接填入输入栏。'),
           draft.length === 0
@@ -183,7 +175,6 @@ window.__ModuleLoader__.load({
             react.createElement(Button, { size: 'md', onClick: addCommand, icon: react.createElement(IconPlusOutlineRegular, { size: 14 }) }, '添加命令'),
             writeError !== '' && react.createElement('span', { className: C.hint }, `保存失败:${writeError}`),
           ),
-        ),
       )
     }
 
@@ -254,16 +245,16 @@ window.__ModuleLoader__.load({
 
         scope.effect(() => {
           const sectionInject = () => ({ scope: cmdScope })
-          return scope.slots.inject('settings.plugins.tab', () => {
+          return scope.slots.inject('plugins.item', () => {
             return scope.slots.register({
-              name: 'settings.plugins.tab',
+              name: 'plugins.item',
               id: 'quick-commands',
-              order: 40,
+              order: 58,
               label: () => '快捷命令',
               inject: sectionInject,
             }, QuickCommandsCard)
           })
-        }, 'quick-commands: settings.plugins.tab')
+        }, 'quick-commands: plugins.item')
       })
     }
 
